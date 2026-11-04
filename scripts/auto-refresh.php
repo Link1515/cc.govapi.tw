@@ -147,12 +147,13 @@ $jobs = [
         'import' => ["{$php_bin} {$dir}/import-meet-transcript.php"],
     ],
     'candidate' => [
-        'watch' => [
+        // 政見補充檔（IMPORT_CANDIDATE_MANIFESTO_SUPPLEMENT_JSONL，逗號分隔）重新辨識後也要重匯
+        'watch' => array_merge([
             getenv('IMPORT_CANDIDATE_JSONL') ?: ($dir . '/../bulletin.jsonl'),
             getenv('IMPORT_CANDIDATE_PERSON_SOURCE_JSONL'),
             getenv('IMPORT_CANDIDATE_ELECTED_SOURCE_CSV'),
             getenv('IMPORT_CANDIDATE_VOTES_SOURCE_JSONL'),
-        ],
+        ], array_map('trim', explode(',', (string) getenv('IMPORT_CANDIDATE_MANIFESTO_SUPPLEMENT_JSONL')))),
         'prepare' => ["{$php_bin} {$dir}/prepare-candidate-lookups.php"],
         'import'  => ["{$php_bin} {$dir}/import-candidate.php"],
     ],
@@ -174,7 +175,7 @@ $jobs = [
             getenv('IMPORT_CANDIDATE_ELECTED_SOURCE_CSV'),
             getenv('IMPORT_CANDIDATE_PERSON_SOURCE_JSONL'),
             getenv('IMPORT_LY_CANDIDATE_VOTE_CSV'),
-        ], array_map('trim', explode(',', (string) getenv('IMPORT_CANDIDATE_VILLAGE_JSONL')))),
+        ], array_map('trim', explode(',', (string) getenv('IMPORT_CANDIDATE_VILLAGE_JSONL'))), array_map('trim', explode(',', (string) getenv('IMPORT_CANDIDATE_MANIFESTO_SUPPLEMENT_JSONL')))),
         'import' => ["{$php_bin} {$dir}/import-village-candidate.php"],
     ],
     'township_candidate' => [
@@ -183,7 +184,7 @@ $jobs = [
             getenv('IMPORT_CANDIDATE_ELECTED_SOURCE_CSV'),
             getenv('IMPORT_CANDIDATE_PERSON_SOURCE_JSONL'),
             getenv('IMPORT_LY_CANDIDATE_VOTE_CSV'),
-        ], array_filter(array_map('trim', explode(',', (string) getenv('IMPORT_CANDIDATE_TOWNSHIP_JSONL'))))),
+        ], array_filter(array_map('trim', explode(',', (string) getenv('IMPORT_CANDIDATE_TOWNSHIP_JSONL')))), array_map('trim', explode(',', (string) getenv('IMPORT_CANDIDATE_MANIFESTO_SUPPLEMENT_JSONL')))),
         'import' => ["{$php_bin} {$dir}/import-township-candidate.php"],
     ],
     'president_candidate' => [
