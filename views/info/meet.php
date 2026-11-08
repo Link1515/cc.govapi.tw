@@ -234,6 +234,9 @@ function meet_speech_avatar_html($s) {
 
     <div>
       <?php foreach ($tr->meet_transcripts as $s): ?>
+      <?php if (($s->{'身分類別'} ?? null) === '程序文字'): /* 休息、散會等程序紀錄，不是誰的發言 */ ?>
+      <div class="text-center small text-body-secondary my-2"<?= ($s->{'代碼'} ?? null) ? ' id="speech-' . htmlspecialchars($s->{'代碼'}) . '"' : '' ?>><?= htmlspecialchars(trim(($s->{'原始標記'} ?? '') . ' ' . ($s->{'發言內容'} ?? ''))) ?></div>
+      <?php continue; endif; ?>
       <?php $is_rep = ($s->{'對應代碼類型'} ?? null) === '議員'; /* 民代放左邊、非民代放右邊 */ ?>
       <?php
         // 「來源頁碼」可能是「1112-1113」這種範圍格式，#page= 只能吃單一整數，取第一個

@@ -64,7 +64,7 @@ class CCAPI_Type_MeetTranscript extends CCAPI_Type
             ],
             '姓名' => [
                 'es_field' => '姓名.keyword',
-                'description' => '發言者姓名（例: 湯志民）',
+                'description' => '發言者姓名（例: 湯志民）；身分類別為「程序文字」或解析不出姓名的「其他」時是 null，看「原始標記」',
                 'type' => 'string',
             ],
             '職稱' => [
@@ -74,7 +74,7 @@ class CCAPI_Type_MeetTranscript extends CCAPI_Type
             ],
             '身分類別' => [
                 'es_field' => '身分類別',
-                'description' => '發言者身分（例: 主席、議員、政府機關首長）',
+                'description' => '發言者身分（例: 主席、議員、政府機關首長、其他）；「程序文字」是休息、散會等程序紀錄（內容是時間），不是任何人的發言',
                 'type' => 'string',
             ],
             '日期' => [
