@@ -268,6 +268,18 @@ function meet_speech_avatar_html($s) {
     </div>
 
     <?php if (($tr->total_page ?? 0) > 1): ?>
+    <script>
+    // 搜尋結果、議員／機關發言列表連進來的 #speech-{會議代碼}-{順序} 沒帶 ?page=，
+    // 發言不在這一頁時依順序換算所在頁（跟上面段落跳頁同一個算法）跳過去
+    (function () {
+      var m = location.hash.match(/^#speech-.*-(\d+)$/);
+      if (!m || document.getElementById(location.hash.slice(1))) return;
+      var page = Math.floor(parseInt(m[1], 10) / <?= (int)($tr->limit ?? 500) ?>) + 1;
+      if (page !== <?= (int)$tr->page ?> && page <= <?= (int)$tr->total_page ?>) {
+        location.replace('?page=' + page + location.hash);
+      }
+    })();
+    </script>
     <div class="d-flex justify-content-center align-items-center gap-2 my-3">
       <?php if ($tr->page > 1): ?>
       <a class="btn btn-sm btn-outline-secondary" href="<?= htmlspecialchars(meet_page_url($tr->page - 1)) ?>">&larr; 上一頁</a>
