@@ -120,6 +120,7 @@ Elastic::dbQuery("/{$prefix}candidate/_mapping", 'PUT', json_encode(['properties
 $count = 0;
 $linked = 0;
 $skipped = [];
+$seen = [];
 $fh = fopen($path, 'r');
 while (($line = fgets($fh)) !== false) {
     $r = json_decode($line, true);
@@ -183,9 +184,31 @@ while (($line = fgets($fh)) !== false) {
         $linked++;
     }
     Elastic::dbBulkInsert('candidate', $doc['代碼'], array_filter($doc, fn($v) => $v !== null && $v !== []));
+    $seen[$doc['代碼']] = true;
     $count++;
 }
 fclose($fh);
 Elastic::dbBulkCommit('candidate');
-error_log(sprintf('Done. 匯入 %d 位登記參選人（%d 位連到過去的參選紀錄），%d 位對不到縣市略過%s。',
-    $count, $linked, count($skipped), $skipped ? '：' . implode('、', array_slice($skipped, 0, 5)) : ''));
+
+// 來源修正姓名或選區時識別碼會跟著變（例：原住民族姓名去掉中間空格），舊識別碼的紀錄會留成重複的人，
+// 匯入後刪掉來源已經沒有的登記紀錄；來源讀不到資料時不刪，避免整批清空
+$removed = [];
+if ($count > 0) {
+    $index = '/' . getenv('ELASTIC_PREFIX') . 'candidate';
+    $r = Elastic::dbQuery("{$index}/_search?scroll=2m", 'POST', json_encode([
+        'size' => 5000, '_source' => false, 'query' => ['prefix' => ['代碼' => "REG-{$year}:"]],
+    ]));
+    while ($r->hits->hits ?? []) {
+        foreach ($r->hits->hits as $hit) {
+            if (!isset($seen[$hit->_id])) {
+                $removed[] = $hit->_id;
+            }
+        }
+        $r = Elastic::dbQuery('/_search/scroll', 'POST', json_encode(['scroll' => '2m', 'scroll_id' => $r->_scroll_id]));
+    }
+    foreach (array_chunk($removed, 1000) as $ids) {
+        Elastic::dbQuery("{$index}/_delete_by_query?conflicts=proceed", 'POST', json_encode(['query' => ['ids' => ['values' => $ids]]]));
+    }
+}
+error_log(sprintf('Done. 匯入 %d 位登記參選人（%d 位連到過去的參選紀錄），%d 位對不到縣市略過%s；刪除 %d 筆來源已經沒有的登記紀錄。',
+    $count, $linked, count($skipped), $skipped ? '：' . implode('、', array_slice($skipped, 0, 5)) : '', count($removed)));
