@@ -2032,11 +2032,45 @@ class InfoController extends MiniEngine_Controller
         $councilor_code = $record->{'代碼'};
         $this->view->speech_term = $term_no;
 
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $session = (string) ($_GET['session'] ?? '');
+        $qs = urlencode('屆') . '=' . $term_no
+            . '&' . urlencode('對應代碼') . '=' . urlencode($councilor_code)
+            . '&' . urlencode('對應代碼類型') . '=' . urlencode('議員');
+
+        // 各會期發言數：不受會期篩選影響，另外查一次聚合
+        $agg = CCAPI::apiQuery(
+            '/meet_transcripts?limit=0&' . $qs . '&agg=' . urlencode('會期代碼') . '&agg_size=200',
+            '該議員本屆各會期的發言數'
+        );
+        $counts = [];
+        foreach (($agg->aggs[0]->buckets ?? []) as $b) {
+            $counts[$b->{'會期代碼'}] = $b->count;
+        }
+        // 依會期開始日期新到舊排列，會期資料裡沒有的代碼排在最後
+        $sessions = [];
+        foreach (array_reverse($this->loadTermSessions($record->{'議會代碼'} ?? '', $term_no)) as $s) {
+            $code = $s->{'代碼'} ?? '';
+            if (isset($counts[$code])) {
+                $sessions[$code] = (object) ['會期代碼' => $code, '會期名稱' => CCAPI_Type_Session::getFriendlyName($code), 'count' => $counts[$code]];
+            }
+        }
+        foreach ($counts as $code => $count) {
+            if (!isset($sessions[$code])) {
+                $sessions[$code] = (object) ['會期代碼' => $code, '會期名稱' => CCAPI_Type_Session::getFriendlyName($code), 'count' => $count];
+            }
+        }
+        if (!isset($sessions[$session])) {
+            $session = '';
+        }
+        $this->view->speech_sessions = array_values($sessions);
+        $this->view->speech_session = $session;
+        $this->view->speech_all_total = array_sum($counts);
+
         $r = CCAPI::apiQuery(
-            '/meet_transcripts?limit=20&' . urlencode('屆') . '=' . $term_no
-                . '&' . urlencode('對應代碼') . '=' . urlencode($councilor_code)
-                . '&' . urlencode('對應代碼類型') . '=' . urlencode('議員')
-                . '&sort=' . urlencode('日期>')
+            '/meet_transcripts?limit=50&page=' . $page . '&' . $qs
+                . ($session !== '' ? '&' . urlencode('會期代碼') . '=' . urlencode($session) : '')
+                . '&sort=' . urlencode('日期>') . '&sort=' . urlencode('順序<')
                 . '&output_fields=' . urlencode('代碼')
                 . '&output_fields=' . urlencode('會議代碼')
                 . '&output_fields=' . urlencode('會期代碼')
@@ -2045,6 +2079,8 @@ class InfoController extends MiniEngine_Controller
             '該議員發言記錄（用對應代碼精確比對，依日期新到舊）'
         );
         $this->view->speech_total = $r->total ?? 0;
+        $this->view->speech_page = $page;
+        $this->view->speech_total_page = (int) ($r->total_page ?? 0);
 
         // 依會期分組，發言已經依日期新到舊排序，分組後第一次出現的會期自然就是最新的
         $groups = [];

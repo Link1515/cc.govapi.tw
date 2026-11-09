@@ -47,6 +47,11 @@ class CCAPI_Type_MeetTranscript extends CCAPI_Type
                 'description' => '所屬場次代碼',
                 'type' => 'string',
             ],
+            '會期代碼' => [
+                'es_field' => '會期代碼',
+                'description' => '所屬會期代碼（例: tpe-14-r8），從場次代碼查詢既有場次資料取得',
+                'type' => 'string',
+            ],
             '會議代碼' => [
                 'es_field' => '會議代碼',
                 'description' => '所屬會議代碼，對應 meet 的「代碼」',

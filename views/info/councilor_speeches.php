@@ -16,6 +16,18 @@ $person_code = $records[0]->{'人物代碼'} ?? '';
 $term = $this->speech_term ?? null;
 $total = $this->speech_total ?? 0;
 $groups = $this->speech_groups ?? [];
+$sessions = $this->speech_sessions ?? [];
+$session = $this->speech_session ?? '';
+$session_counts = array_column(array_map(fn($s) => (array)$s, $sessions), 'count', '會期代碼');
+$all_total = $this->speech_all_total ?? $total;
+$page = $this->speech_page ?? 1;
+$total_page = $this->speech_total_page ?? 0;
+$speech_url = function ($session_code, $page_no) use ($person_code, $term) {
+    $q = ['term' => (int)$term];
+    if ($session_code !== '') $q['session'] = $session_code;
+    if ($page_no > 1) $q['page'] = $page_no;
+    return '/info/councilor/' . urlencode($person_code) . '/speeches?' . http_build_query($q);
+};
 ?>
 
 <?php if (count($records) > 1): ?>
@@ -35,8 +47,17 @@ $groups = $this->speech_groups ?? [];
 <?php else: ?>
 
 <p class="small text-body-secondary">
-  第 <?= (int)$term ?> 屆・共找到 <?= $total ?> 筆發言記錄，來自 <?= count($groups) ?> 個會期（依日期新到舊排列）
+  第 <?= (int)$term ?> 屆・共找到 <?= number_format($all_total) ?> 筆發言記錄，來自 <?= count($sessions) ?> 個會期（依日期新到舊排列）
 </p>
+
+<?php if (count($sessions) > 1): ?>
+<div class="d-flex flex-wrap gap-1 mb-3">
+  <a href="<?= htmlspecialchars($speech_url('', 1)) ?>" class="badge <?= $session === '' ? 'bg-primary' : 'bg-light text-dark border' ?>">全部 <?= number_format($all_total) ?></a>
+  <?php foreach ($sessions as $s): ?>
+  <a href="<?= htmlspecialchars($speech_url($s->{'會期代碼'}, 1)) ?>" class="badge <?= $session === $s->{'會期代碼'} ? 'bg-primary' : 'bg-light text-dark border' ?>"><?= htmlspecialchars($s->{'會期名稱'}) ?> <?= number_format($s->count) ?></a>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>
 
 <?php if (empty($groups)): ?>
 <?php if ($this->speech_no_coverage ?? false): ?>
@@ -54,7 +75,7 @@ $groups = $this->speech_groups ?? [];
 <div class="card shadow-sm mb-3">
   <div class="card-header py-2 d-flex align-items-center justify-content-between">
     <strong class="small"><?= htmlspecialchars($group->{'會期名稱'}) ?></strong>
-    <span class="text-body-secondary small"><?= count($group->items) ?> 筆發言</span>
+    <span class="text-body-secondary small"><?= number_format($session_counts[$group->{'會期代碼'}] ?? count($group->items)) ?> 筆發言</span>
   </div>
   <div class="list-group list-group-flush">
     <?php foreach ($group->items as $t): ?>
@@ -81,6 +102,13 @@ $groups = $this->speech_groups ?? [];
   </div>
 </div>
 <?php endforeach; ?>
+<?php if ($total_page > 1): ?>
+<div class="d-flex align-items-center gap-2 small">
+  <a class="btn btn-sm btn-outline-secondary<?= $page <= 1 ? ' disabled' : '' ?>" href="<?= htmlspecialchars($speech_url($session, max(1, $page - 1))) ?>">上一頁</a>
+  <span>第 <?= number_format($page) ?> / <?= number_format($total_page) ?> 頁</span>
+  <a class="btn btn-sm btn-outline-secondary<?= $page >= $total_page ? ' disabled' : '' ?>" href="<?= htmlspecialchars($speech_url($session, $page + 1)) ?>">下一頁</a>
+</div>
+<?php endif; ?>
 <?php endif; ?>
 
 <?php endif; ?>
