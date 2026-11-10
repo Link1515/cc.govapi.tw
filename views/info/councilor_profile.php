@@ -42,6 +42,9 @@ $spans_multiple_councils = count(array_unique(array_map(fn($r) => $r->{'議會�
   <div class="col-md-3">
     <?php if ($selected->{'照片'} ?? null): ?>
     <img src="<?= htmlspecialchars($selected->{'照片'}) ?>" alt="" class="img-fluid rounded shadow-sm" style="width:100%; aspect-ratio:3/4; object-fit:cover;">
+    <?php if ($selected->{'照片來源'} ?? null): ?>
+    <div class="small text-body-secondary mt-1">照片來源：<?php if ($selected->{'照片來源網址'} ?? null): ?><a href="<?= htmlspecialchars($selected->{'照片來源網址'}) ?>" target="_blank" rel="noopener" class="link-secondary"><?= htmlspecialchars($selected->{'照片來源'}) ?></a><?php else: ?><?= htmlspecialchars($selected->{'照片來源'}) ?><?php endif; ?></div>
+    <?php endif; ?>
     <?php else: ?>
     <div class="d-flex align-items-center justify-content-center bg-secondary bg-opacity-10 rounded" style="aspect-ratio:3/4; font-size:3rem;">🧑</div>
     <?php endif; ?>

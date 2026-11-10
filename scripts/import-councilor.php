@@ -52,6 +52,8 @@ $index_mapping = [
         '電子信箱' => ['type' => 'keyword', 'index' => false],
         '身分別'   => ['type' => 'keyword'],
         '照片'     => ['type' => 'keyword', 'index' => false],
+        '照片來源' => ['type' => 'keyword'],
+        '照片來源網址' => ['type' => 'keyword', 'index' => false],
         '議會代碼' => ['type' => 'keyword'],
         '屆代碼'   => ['type' => 'keyword'],
         '性別'     => ['type' => 'keyword'],
@@ -199,7 +201,11 @@ while (($line = fgets($fh)) !== false) {
             }
             continue;
         }
-        if ($key === '照片' && strpos($val, 'files/') === 0) {
+        if ($key === '照片' && strpos($val, 'files/照片/') === 0) {
+            // 存檔的內政部照片（files/照片/moi/...，人下架後原網址會失效），放在 councilor-photo/ 底下
+            $val = 'https://lydata.ronny-s3.click/councilor-photo/'
+                . implode('/', array_map('rawurlencode', explode('/', substr($val, strlen('files/照片/')))));
+        } elseif ($key === '照片' && strpos($val, 'files/') === 0) {
             // 來源是選舉公報的相片（block本機相對路徑，例：files/image/...），
             // 跟MOI來源直接給完整https網址不同格式，轉成跟候選人照片同一套
             // 公開網址（import-candidate.php的bulletin_image_url()）
